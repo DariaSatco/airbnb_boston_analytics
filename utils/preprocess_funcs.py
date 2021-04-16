@@ -6,6 +6,7 @@ from dateutil.relativedelta import relativedelta
 from typing import List
 
 from nltk.sentiment import SentimentIntensityAnalyzer
+from nltk.tokenize import RegexpTokenizer
 import nltk
 nltk.download('vader_lexicon')
 
@@ -182,9 +183,18 @@ def one_hot_enc_for_amenities(df: pd.DataFrame,
     Returns:
         new_df (DataFrame) : output dataframe with new columns and dropped amenities_col
     """
+
     df_copy = df.copy()
     new_cols = pd.get_dummies(df_copy[amenities_col].apply(pd.Series).stack()).sum(level=0)
     df_copy = df_copy.drop(columns=[amenities_col])
     new_df = pd.concat([df_copy, new_cols], axis=1)
+    new_df = new_df.drop(columns=[''])
     
     return new_df
+
+
+def preprocess_col_name(name: str) -> str:
+    tokenizer = RegexpTokenizer(r'\w+')
+    word_list = tokenizer.tokenize(name)
+    new_name = ('_').join(word_list)
+    return new_name
