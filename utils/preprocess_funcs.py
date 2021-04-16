@@ -3,6 +3,12 @@ import numpy as np
 import datetime
 from dateutil.relativedelta import relativedelta
 
+from typing import List
+
+from nltk.sentiment import SentimentIntensityAnalyzer
+import nltk
+nltk.download('vader_lexicon')
+
 def convert_price_to_num(data: pd.DataFrame, 
                          price_col_name: str='price',
                          output_col_name: str='clean_price') -> pd.DataFrame:
@@ -107,3 +113,78 @@ def get_past_date(date_to: str,
         return str(date.date())
     else:
         return "Wrong Argument format"
+
+
+def get_sentiment_score(text: str,
+                        output_component: str='compound') -> float:
+    """
+    Use pre-traind Vader sentiment analyzer to calculate 
+    sentiment of the text. 
+    
+    Args:
+        text (str) : text to analyze
+        output_component (str) : the component, which should be given in the end.
+            Can take one of the following
+            
+    Returns:
+        (float) : output_component of the SentimentIntensityAnalyzer().polarity_scores(text)
+    """
+    sia = SentimentIntensityAnalyzer()
+    result = sia.polarity_scores(text)
+    if output_component in ['neg', 'neu', 'pos', 'compound']:
+        return result[output_component]
+    else:
+        print("output_component argument must take one of the following values: 'neg', 'neu', 'pos', 'compound'!")
+
+
+def add_dummy_cols(df: pd.DataFrame, 
+                    cat_cols: List, 
+                    dummy_na: bool) -> pd.DataFrame:
+    '''
+    Args:
+        df (DataFrame) : pandas dataframe with categorical variables you want to dummy
+        cat_cols (List): list of strings that are associated with names of the categorical columns
+        dummy_na (bool) : Bool holding whether you want to dummy NA vals of categorical columns or not
+    
+    Returns:
+        df (DataFrame) : a new dataframe that has the following characteristics:
+            1. contains all columns that were not specified as categorical
+            2. removes all the original columns in cat_cols
+            3. dummy columns for each of the categorical columns in cat_cols
+            4. if dummy_na is True - it also contains dummy columns for the NaN values
+            5. Use a prefix of the column name with an underscore (_) for separating 
+    '''
+    df_non_cat = df.drop(columns=cat_cols, errors='ignore')
+    dummy_df = {}
+    counter = 0
+    for col in cat_cols:
+        if col in df.columns:
+            dummy_df[col] = pd.get_dummies(df[col], dummy_na=dummy_na, prefix=col)
+            counter += dummy_df[col].shape[1]
+    
+    new_cat_df = pd.concat([dummy_df[c] for c in dummy_df], axis=1)
+    
+    result = pd.concat([df_non_cat, new_cat_df], axis=1)
+
+    return result
+
+
+def one_hot_enc_for_amenities(df: pd.DataFrame,
+                              amenities_col: str='amenities'):
+    """
+    Generate new columns, where each column correspond to the amenity given 
+    in the list inside amenities_col
+    
+    Ags:
+        df (DataFrame)     : input dataframe with amenities_col
+        amenities_co (str) : name of the amenities column, default = 'amenities'
+        
+    Returns:
+        new_df (DataFrame) : output dataframe with new columns and dropped amenities_col
+    """
+    df_copy = df.copy()
+    new_cols = pd.get_dummies(df_copy[amenities_col].apply(pd.Series).stack()).sum(level=0)
+    df_copy = df_copy.drop(columns=[amenities_col])
+    new_df = pd.concat([df_copy, new_cols], axis=1)
+    
+    return new_df
