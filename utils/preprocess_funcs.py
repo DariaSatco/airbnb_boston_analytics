@@ -171,7 +171,8 @@ def add_dummy_cols(df: pd.DataFrame,
 
 
 def one_hot_enc_for_amenities(df: pd.DataFrame,
-                              amenities_col: str='amenities'):
+                              amenities_col: str='amenities',
+                              drop_thershold: float=0):
     """
     Generate new columns, where each column correspond to the amenity given 
     in the list inside amenities_col
@@ -179,6 +180,8 @@ def one_hot_enc_for_amenities(df: pd.DataFrame,
     Ags:
         df (DataFrame)     : input dataframe with amenities_col
         amenities_co (str) : name of the amenities column, default = 'amenities'
+        drop_threshold (float) : float between 0 and 1; all columns, where the share
+            of 1's is less then drop_threshold, will be removed. 
         
     Returns:
         new_df (DataFrame) : output dataframe with new columns and dropped amenities_col
@@ -186,9 +189,11 @@ def one_hot_enc_for_amenities(df: pd.DataFrame,
 
     df_copy = df.copy()
     new_cols = pd.get_dummies(df_copy[amenities_col].apply(pd.Series).stack()).sum(level=0)
+    stat = new_cols.sum()/len(new_cols)
+    cols_to_drop = list(set(list(stat[stat<drop_thershold].index) + ['']))
+    new_cols = new_cols.drop(columns=cols_to_drop)
     df_copy = df_copy.drop(columns=[amenities_col])
     new_df = pd.concat([df_copy, new_cols], axis=1)
-    new_df = new_df.drop(columns=[''])
     
     return new_df
 
