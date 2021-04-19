@@ -194,7 +194,45 @@ def one_hot_enc_for_amenities(df: pd.DataFrame,
 
 
 def preprocess_col_name(name: str) -> str:
+    """
+    preprocess column names to avoid conflicts with LightGBM
+    """
     tokenizer = RegexpTokenizer(r'\w+')
     word_list = tokenizer.tokenize(name)
     new_name = ('_').join(word_list)
     return new_name
+
+
+def calibrate_price_by_month(predicted_price: float,
+                             scrape_date: str,
+                             calendar_date: str,
+                             neighbourhood: str)->float:
+    """
+    Tune the predicted price accordingly to seasonality data
+    
+    Args:
+        predicted_price (float) : the first guess of the price, which should be modified
+            according to seasonality
+        scrape_date (str)       : date of listing scraping in %Y-%m-%d format
+        calendar_date (str)     : date of interest, to tune price
+        neighbourhood           : neighbourhood of the given listing
+    
+    Returns:
+        resulting_price (float) : recalculated price
+    
+    """
+    month_district_stat = pd.read_csv('Boston_Airbnb_data/month_district_price.csv')
+    month_of_prediction = datetime.datetime.strptime(scrape_date, '%Y-%m-%d').month
+    month_of_calendar = datetime.datetime.strptime(calendar_date, '%Y-%m-%d').month
+    
+    prediction_reference_tab = (month_district_stat[month_district_stat['month']==month_of_prediction]
+                                [['district', 'price']]
+                                .rename(columns={'price': 'ref_price'}))
+    month_district_stat = month_district_stat.merge(prediction_reference_tab, on='district', how='left')
+    month_district_stat['coef'] = month_district_stat['price']/month_district_stat['ref_price']
+    
+    coef = month_district_stat[ (month_district_stat['district']==neighbourhood) &
+                              (month_district_stat['month']==month_of_calendar)]['coef'].values[0]
+    resulting_price = predicted_price*coef
+    
+    return resulting_price
