@@ -1,7 +1,7 @@
 # Boston airbnb analysis
 This project is an example of how you can perform a quick analysis of opensource airbnb data ([source](http://insideairbnb.com/get-the-data.html)). We demonstrate the EDA and modelling pipelines with Boston arbnb data compiled on September 7, 2016, but you can easily reuse the pipelines for many other cities and periods. The data utilizes public information compiled from the Airbnb web-site including the availabiity calendar for 365 days in the future, and the reviews for each listing. Data is verified, cleansed, analyzed and aggregated. 
 
-![Heatmap of airbnb listing prices in Boston (Sep 2016)](imgs/price_heatmap.png)
+![Heatmap of airbnb listing prices in Boston (Sep 2016)](imgs/price_heatmap_w_neigh.png)
 
 ## Exploratory data analysis (EDA.ipynb)
 Here we look at the data from files:
